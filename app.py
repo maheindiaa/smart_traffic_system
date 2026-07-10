@@ -629,6 +629,32 @@ elif menu == "Reports":
 
     st.pyplot(fig)
 
+    st.divider()
+
+    st.subheader("🚑 Emergency Analytics")
+
+    labels = [
+        "Emergency",
+        "Normal"
+    ]
+
+    values = [
+        st.session_state.emergency_count,
+        len(reports) - st.session_state.emergency_count
+    ]
+
+    fig2, ax2 = plt.subplots()
+
+    ax2.pie(
+        values,
+        labels=labels,
+        autopct="%1.1f%%"
+    )
+
+    ax2.set_title("Emergency vs Normal Traffic")
+
+    st.pyplot(fig2)
+
 
     
 
