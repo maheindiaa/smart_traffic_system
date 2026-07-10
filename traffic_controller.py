@@ -27,7 +27,7 @@ class TrafficController:
             self.timer = 40
         else:
             self.timer = 20
-
+# for Countdown
     def countdown(self):
 
         if self.timer > 0:
