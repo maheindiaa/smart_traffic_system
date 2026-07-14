@@ -2,7 +2,9 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import plotly.express as px
 import random
+import time
 
 from signal_model import TrafficSignal
 
@@ -113,8 +115,14 @@ else:
 if "running" not in st.session_state:
     st.session_state.running = False
 
+if "simulation" not in st.session_state:
+    st.session_state.simulation = False
+
 if "emergency_count" not in st.session_state:
     st.session_state.emergency_count = 0
+
+if "traffic_history" not in st.session_state:
+    st.session_state.traffic_history = []
 
 # Timer
 north_timer = 40
@@ -160,6 +168,42 @@ if menu == "Dashboard":
         time.sleep(1)
 
         st.rerun()
+
+    # if st.session_state.simulation:
+
+    #     north.vehicles = random.randint(5, 60)
+    #     south.vehicles = random.randint(5, 60)
+    #     east.vehicles = random.randint(5, 60)
+    #     west.vehicles = random.randint(5, 60)
+
+    #     time.sleep(2)
+
+    #     st.rerun()
+    if st.session_state.simulation:
+
+        if "last_simulation" not in st.session_state:
+            st.session_state.last_simulation = time.time()
+
+        if time.time() - st.session_state.last_simulation >= 2:
+
+            north.vehicles = random.randint(5, 60)
+            south.vehicles = random.randint(5, 60)
+            east.vehicles = random.randint(5, 60)
+            west.vehicles = random.randint(5, 60)
+
+            st.session_state.traffic_history.append(
+                {
+                    "North": north.vehicles,
+                    "South": south.vehicles,
+                    "East": east.vehicles,
+                    "West": west.vehicles
+                }
+            )
+
+            st.session_state.last_simulation = time.time()
+
+        time.sleep(0.1)
+        # st.rerun()
     
 
     st.markdown("---")
@@ -384,8 +428,9 @@ if menu == "Dashboard":
 
     st.divider()
 
-    # start, stop, auto, reset = st.columns(4)
-    start, stop, auto, emergency, reset = st.columns(5)
+    
+    # start, stop, auto, emergency, reset = st.columns(5)
+    start, stop, auto, emergency, simulation, reset = st.columns(6)
 
     with start:
         if st.button("▶ Start"):
@@ -457,10 +502,58 @@ if menu == "Dashboard":
             st.rerun()
     
    
-   
+    # with simulation:
+
+    #     if st.button("🚗 Simulation"):
+
+    #         st.session_state.simulation = \
+    #             not st.session_state.simulation
+
+    #         st.rerun()
+
+    with simulation:
+
+        button_text = (
+            "🛑 Stop Simulation"
+            if st.session_state.simulation
+            else "🚗 Start Simulation"
+        )
+
+        if st.button(button_text):
+
+            st.session_state.simulation = \
+                not st.session_state.simulation
+
+            st.rerun()
 
     with reset:
-        st.button("🔄 Reset")
+
+        if st.button("🔄 Reset"):
+
+            st.session_state.running = False
+            st.session_state.simulation = False
+
+            st.session_state.emergency_count = 0
+
+            north.vehicles = 25
+            south.vehicles = 10
+            east.vehicles = 18
+            west.vehicles = 30
+
+            north.set_green()
+            south.set_red()
+            east.set_red()
+            west.set_red()
+
+            north.reset_timer(40)
+            south.reset_timer(20)
+            east.reset_timer(20)
+            west.reset_timer(20)
+
+            controller.current = 0
+
+            st.rerun()
+    
 
 
 
@@ -522,6 +615,9 @@ if menu == "Dashboard":
             west.reset_timer(40)
 
             st.rerun()
+
+    if st.session_state.simulation:
+        st.rerun()
 
     
 elif menu == "Traffic Control":
@@ -616,18 +712,53 @@ elif menu == "Reports":
         west.vehicles
     ]
 
-    fig, ax = plt.subplots()
+    chart_data = {
+        "Direction": [
+            "North",
+            "South",
+            "East",
+            "West"
+        ],
+        "Vehicles": [
+            north.vehicles,
+            south.vehicles,
+            east.vehicles,
+            west.vehicles
+        ]
+    }
 
-    ax.bar(
-        directions,
-        vehicle_counts
+    fig = px.bar(
+        chart_data,
+        x="Direction",
+        y="Vehicles",
+        title="Vehicle Count by Direction"
     )
 
-    ax.set_xlabel("Direction")
-    ax.set_ylabel("Vehicles")
-    ax.set_title("Vehicle Count by Direction")
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
-    st.pyplot(fig)
+    st.divider()
+
+    st.subheader("📈 Traffic History")
+
+    if len(st.session_state.traffic_history) > 0:
+
+        history_df = pd.DataFrame(
+            st.session_state.traffic_history
+        )
+
+        history_fig = px.line(
+            history_df,
+            title="Traffic Trend Over Time"
+        )
+
+        st.plotly_chart(
+            history_fig,
+            use_container_width=True
+        )
+    
 
     st.divider()
 
@@ -643,18 +774,31 @@ elif menu == "Reports":
         len(reports) - st.session_state.emergency_count
     ]
 
-    fig2, ax2 = plt.subplots()
 
-    ax2.pie(
-        values,
-        labels=labels,
-        autopct="%1.1f%%"
+    pie_data = {
+        "Type": [
+            "Emergency",
+            "Normal"
+        ],
+        "Count": [
+            st.session_state.emergency_count,
+            len(reports) - st.session_state.emergency_count
+        ]
+    }
+
+    fig2 = px.pie(
+        pie_data,
+        names="Type",
+        values="Count",
+        title="Emergency vs Normal Traffic"
     )
 
-    ax2.set_title("Emergency vs Normal Traffic")
-
-    st.pyplot(fig2)
-
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+        )
+    
+   
 
     
 
