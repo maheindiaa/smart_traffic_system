@@ -40,3 +40,8 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+
+*.mp4
+*.pt
+*.db
+__pycache__/
